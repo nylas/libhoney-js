@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base data-ice="baseUrl" href="../../">
+  <title data-ice="title">src/libhoney.js | API Document</title>
+  <link type="text/css" rel="stylesheet" href="css/style.css">
+  <link type="text/css" rel="stylesheet" href="css/prettify-tomorrow.css">
+  <script src="script/prettify/prettify.js"></script>
+  
+  
+  <script src="script/manual.js"></script>
+</head>
+<body class="layout-container" data-ice="rootContainer">
+
+<header>
+  <a href="./">Home</a>
+  
+  <a href="identifiers.html">Reference</a>
+  <a href="source.html">Source</a>
+  <a href="test.html" data-ice="testLink">Test</a>
+  <a data-ice="repoURL" href="https://github.com/honeycombio/libhoney-js.git" class="repo-url-github">Repository</a>
+  <div class="search-box">
+  <span>
+    <img src="./image/search.png">
+    <span class="search-input-edge"></span><input class="search-input"><span class="search-input-edge"></span>
+  </span>
+    <ul class="search-result"></ul>
+  </div>
+</header>
+
+<nav class="navigation" data-ice="nav"><div>
+  <ul>
+    
+  <li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/builder.js~Builder.html">Builder</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/event.js~Event.html">Event</a></span></span></li>
+<li data-ice="doc"><span data-ice="kind" class="kind-class">C</span><span data-ice="name"><span><a href="class/src/libhoney.js~Libhoney.html">Libhoney</a></span></span></li>
+</ul>
+</div>
+</nav>
+
+<div class="content" data-ice="content"><h1 data-ice="title">src/libhoney.js</h1>
+<pre class="source-code line-number raw-source-code"><code class="prettyprint linenums" data-ice="content">// Copyright 2016 Hound Technology, Inc. All rights reserved.
+// Use of this source code is governed by the Apache License 2.0
+// license that can be found in the LICENSE file.
+
+/**
+ * @module
+ */
+import Transmission from &apos;./transmission&apos;;
+import Builder from &apos;./builder&apos;;
+import Event from &apos;./event&apos;;
+import foreach from &apos;./foreach&apos;;
+
+const defaults = {
+  // host to send data to
+  apiHost: &quot;https://api.honeycomb.io/&quot;,
+
+  // sample rate of data.  causes us to send 1/sample-rate of events
+  // i.e. `sampleRate: 10` means we only send 1/10th the events.
+  sampleRate: 1,
+
+  // response queue.  just an plain js array that transmission will append to
+  responseQueue: [],
+
+  // transmission constructor, or a string &quot;worker&quot;/&quot;base&quot; to pick one of our builtin versions.
+  // we fall back to the base impl if worker or a custom implementation throws on init.
+  transmission: &quot;base&quot;,
+
+  // batch triggers
+  batchSizeTrigger: 100, // we send a batch to the api when we have this many outstanding events
+  batchTimeTrigger: 100 // ... or after this many ms has passed.
+};
+
+/**
+ * Represents a honeycomb context.  Each honeycomb context has 
+ * @class
+ */
+export default class Libhoney {
+  /**
+   * constructs a libhoney context.
+   *
+   * @param {Object} [opts] overrides for the defaults
+   * @constructor
+   * @example
+   * import Libhoney from &apos;libhoney&apos;;
+   * let honey = new Libhoney({
+   *   sampleRate: 10
+   * });
+   */
+  constructor (opts) {
+    this._options = Object.assign({}, defaults, opts);
+    this._transmission = getAndInitTransmission(this._options.transmission, this._options);
+    this._usable = this._transmission != null;
+    this._builder = new Builder(this);
+  }
+
+  /**
+   *  sendEvent takes events of the following form:
+   *
+   * {
+   *   data: a JSON-serializable object, keys become colums in Honeycomb
+   *   timestamp [optional]: time for this event, defaults to now()
+   *   writeKey [optional]: your team&apos;s write key.  overrides the libhoney instance&apos;s value.
+   *   dataset [optional]: the data set name.  overrides the libhoney instance&apos;s value.
+   *   sampleRate [optional]: cause us to send 1 out of sampleRate events.  overrides the libhoney instance&apos;s value.
+   * }
+   * @private
+   */
+  sendEvent (event) {
+    if (!this._usable) return;
+
+    var timestamp = event.timestamp || Date.now();
+    if (typeof timestamp === &apos;string&apos; || typeof timestamp === &apos;number&apos;)
+      timestamp = new Date(timestamp);
+
+    if (typeof event.data !== &apos;object&apos; || event.data === null) {
+      console.error(&quot;.data must be an object&quot;);
+      return;
+    }
+    var postData;
+    try {
+      postData = JSON.stringify(event.data);
+    }
+    catch (e) {
+      console.error(&quot;error converting event data to JSON: &quot; + e);
+      return;
+    }
+
+    var apiHost = event.apiHost || this._options.apiHost;
+    if (typeof apiHost !== &apos;string&apos;) {
+      console.error(&quot;.apiHost must be a string&quot;);
+      return;
+    }
+
+    var writeKey = event.writeKey || this._options.writeKey;
+    if (typeof writeKey !== &apos;string&apos;) {
+      console.error(&quot;.writeKey must be a string&quot;);
+      return;
+    }
+
+    var dataset = event.dataset || this._options.dataset;
+    if (typeof dataset !== &apos;string&apos;) {
+      console.error(&quot;.dataset must be a string&quot;);
+      return;
+    }
+
+    var sampleRate = event.sampleRate || this._options.sampleRate;
+    if (typeof sampleRate !== &apos;number&apos;) {
+      console.error(&quot;.sampleRate must be a number&quot;);
+      return;
+    }
+
+    this._transmission.sendEvent({
+      timestamp: timestamp,
+      apiHost: apiHost,
+      postData: postData,
+      writeKey: writeKey,
+      dataset: dataset,
+      sampleRate: sampleRate
+    });
+  }
+
+  /**
+   * adds a group of field-&gt;values to the global Builder.
+   * @param {Object|Map&lt;string, any&gt;} data field-&gt;value mapping.
+   * @returns {Libhoney} this libhoney instance.
+   * @example &lt;caption&gt;using an object&lt;/caption&gt;
+   *   honey.add ({
+   *     responseTime_ms: 100,
+   *     httpStatusCode: 200
+   *   });
+   * @example &lt;caption&gt;using an ES2015 map&lt;/caption&gt;
+   *   let map = new Map();
+   *   map.set(&quot;responseTime_ms&quot;, 100);
+   *   map.set(&quot;httpStatusCode&quot;, 200);
+   *   honey.add (map);
+   */
+  add (data) {
+    this._builder.add(data);
+    return this;
+  }
+  
+  /**
+   * adds a single field-&gt;value mapping to the global Builder.
+   * @param {string} name name of field to add.
+   * @param {any} val value of field to add.
+   * @returns {Libhoney} this libhoney instance.
+   * @example
+   *   honey.addField(&quot;responseTime_ms&quot;, 100);
+   */
+  addField (name, val) {
+    this._builder.addField(name, val);
+    return this;
+  }
+
+  /**
+   * adds a single field-&gt;dynamic value function to the global Builder.
+   * @param {string} name name of field to add.
+   * @param {function(): any} fn function that will be called to generate the value whenever an event is created.
+   * @returns {Libhoney} this libhoney instance.
+   * @example
+   *   honey.addDynamicField(&quot;process_heapUsed&quot;, () =&gt; process.memoryUsage().heapUsed);
+   */
+  addDynamicField (name, fn) {
+    this._builder.addDynamicField(name, fn);
+    return this;
+  }
+
+  /**
+   * creates and sends an event, including all global builder fields/dyn_fields, as well as anything in the optional data parameter.
+   * @param {Object|Map&lt;string, any&gt;} [data] field-&gt;value mapping to add to the event sent.
+   * @example &lt;caption&gt;empty sendNow&lt;/caption&gt;
+   *   honey.sendNow(); // sends just the data that has been added via add/addField/addDynamicField.
+   * @example &lt;caption&gt;adding data at send-time&lt;/caption&gt;
+   *   honey.sendNow({
+   *     additionalField: value
+   *   });
+   */
+  sendNow (data) {
+    return this._builder.sendNow(data);
+  }
+  
+  /**
+   * creates and returns a new Event containing all fields/dyn_fields from the global Builder, that can be further fleshed out and sent on its own.
+   * @returns {Event} an Event instance
+   * @example &lt;caption&gt;adding data at send-time&lt;/caption&gt;
+   *   let ev = honey.newEvent();
+   *   ev.addField(&quot;additionalField&quot;, value);
+   *   ev.send();
+   */
+  newEvent () {
+    return this._builder.newEvent();
+  }
+
+  /**
+   * creates and returns a clone of the global Builder, merged with fields and dyn_fields passed as arguments.
+   * @param {Object|Map&lt;string, any&gt;} fields a field-&gt;value mapping to merge into the new builder.
+   * @param {Object|Map&lt;string, any&gt;} dyn_fields a field-&gt;dynamic function mapping to merge into the new builder.
+   * @returns {Builder} a Builder instance
+   * @example &lt;caption&gt;no additional fields/dyn_field&lt;/caption&gt;
+   *   let builder = honey.newBuilder();
+   * @example &lt;caption&gt;additional fields/dyn_field&lt;/caption&gt;
+   *   let builder = honey.newBuilder({ requestId },
+   *                                  {
+   *                                    process_heapUsed: () =&gt; process.memoryUsage().heapUsed
+   *                                  });
+   */
+  newBuilder (fields, dyn_fields) {
+    var b = new Builder(this, this._fields, this._dyn_fields);
+    
+    foreach(fields, (v,k) =&gt; b.addField(k, v));
+    foreach(dyn_fields, (v,k) =&gt; b.addDynamicField(k, v));
+
+    return b;
+  }
+}
+
+function getAndInitTransmission(transmission, options) {
+  if (typeof transmission === &quot;string&quot;) {
+    if (transmission === &quot;base&quot;) {
+      transmission = Transmission;
+    } else if (transmission === &quot;worker&quot;) {
+      console.warn(&quot;worker implementation not ready yet.  using base implementation&quot;);
+      transmission = Transmission;
+    } else {
+      throw new Error(`unknown transmission implementation &quot;${transmission}&quot;.`);
+    }
+  } else if (typeof transmission !== &quot;function&quot;) {
+    throw new Error(&quot;.transmission must be one of &apos;base&apos;/&apos;worker&apos; or a constructor.&quot;);
+  }
+
+  try {
+    return new transmission(options);
+  }
+  catch (e) {
+    if (transmission == Transmission) {
+      throw new Error(&quot;unable to initialize base transmission implementation.&quot;, e);
+    }
+
+    console.warn(&quot;failed to initialize transmission, falling back to base implementation.&quot;);
+    try {
+      transmission = new Transmission(options);
+    }
+    catch (e) {
+      throw new Error(&quot;unable to initialize base transmission implementation.&quot;, e);
+    }
+  }
+
+  return transmission;
+}
+</code></pre>
+
+</div>
+
+<footer class="footer">
+  Generated by <a href="https://esdoc.org">ESDoc<span data-ice="esdocVersion">(0.4.8)</span></a>
+</footer>
+
+<script src="script/search_index.js"></script>
+<script src="script/search.js"></script>
+<script src="script/pretty-print.js"></script>
+<script src="script/inherited-summary.js"></script>
+<script src="script/test-summary.js"></script>
+<script src="script/inner-link.js"></script>
+<script src="script/patch-for-local.js"></script>
+</body>
+</html>

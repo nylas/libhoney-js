@@ -1,0 +1,25 @@
+{
+  "coverage": "91.3%",
+  "expectCount": 23,
+  "actualCount": 21,
+  "files": {
+    "src/builder.js": {
+      "expectCount": 7,
+      "actualCount": 7,
+      "undocumentLines": []
+    },
+    "src/event.js": {
+      "expectCount": 8,
+      "actualCount": 6,
+      "undocumentLines": [
+        22,
+        23
+      ]
+    },
+    "src/libhoney.js": {
+      "expectCount": 8,
+      "actualCount": 8,
+      "undocumentLines": []
+    }
+  }
+}

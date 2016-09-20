@@ -1,0 +1,2617 @@
+[
+  {
+    "__docId__": 0,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/builder.js",
+    "memberof": null,
+    "longname": "src/builder.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 8,
+    "content": "// Copyright 2016 Hound Technology, Inc. All rights reserved.\n// Use of this source code is governed by the Apache License 2.0\n// license that can be found in the LICENSE file.\n\n/**\n * @module\n */\nimport Event from './event';\nimport foreach from './foreach';\n\n/**\n * Allows piecemeal creation of events.\n * @class\n */\nexport default class Builder {\n  /**\n   * @constructor\n   * @private\n   */\n  constructor (libhoney, fields, dyn_fields) {\n    this._libhoney = libhoney;\n    this._fields = Object.create(null);\n    this._dyn_fields = Object.create(null);\n\n    foreach(fields, (v,k) => this.addField(k, v));\n    foreach(dyn_fields, (v,k) => this.addDynamicField(k, v));\n  }\n\n  /**\n   * adds a group of field->values to the events created from this builder.\n   * @param {Object|Map<string, any>} data field->value mapping.\n   * @returns {Builder} this Builder instance.\n   * @example <caption>using an object</caption>\n   *   var honey = new libhoney();\n   *   var builder = honey.newBuilder();\n   *   builder.add ({\n   *     responseTime_ms: 100,\n   *     httpStatusCode: 200\n   *   });\n   * @example <caption>using an ES2015 map</caption>\n   *   let map = new Map();\n   *   map.set(\"responseTime_ms\", 100);\n   *   map.set(\"httpStatusCode\", 200);\n   *   builder.add (map);\n   */\n  add (data) {\n    foreach(data, (v,k) => this.addField(k, v));\n    return this;\n  }\n\n  /**\n   * adds a single field->value mapping to the events created from this builder.\n   * @param {string} name\n   * @param {any} val\n   * @returns {Builder} this Builder instance.\n   * @example\n   *   builder.addField(\"responseTime_ms\", 100);\n   */\n  addField (name, val) {\n    if (typeof val === \"object\") {\n      // JS reports typeof == object for a lot of things that we don't need additional processing to handle\n      if (val === null || val instanceof Boolean || val instanceof Number || val instanceof Date || val instanceof String) {\n        // these are fine\n      } else {\n        val = JSON.stringify(val);\n      }\n    } else if (val == undefined) {\n      val = null;\n    }\n    this._fields[name] = val;\n    return this;\n  }\n  \n  /**\n   * adds a single field->dynamic value function, which is invoked to supply values when events are created from this builder.\n   * @param {string} name the name of the field to add to events.\n   * @param {function(): any} fn the function called to generate the value for this field.\n   * @returns {Builder} this Builder instance.\n   * @example\n   *   builder.addDynamicField(\"process_heapUsed\", () => process.memoryUsage().heapUsed);\n   */\n  addDynamicField (name, fn) {\n    this._dyn_fields[name] = fn;\n  }\n\n  /**\n   * creates and sends an event, including all builder fields/dyn_fields, as well as anything in the optional data parameter.\n   * @param {Object|Map<string, any>} [data] field->value mapping to add to the event sent.\n   * @example <caption>empty sendNow</caption>\n   *   builder.sendNow(); // sends just the data that has been added via add/addField/addDynamicField.\n   * @example <caption>adding data at send-time</caption>\n   *   builder.sendNow({\n   *     additionalField: value\n   *   });\n   */\n  sendNow (data) {\n    var ev = this.newEvent();\n    ev.add(data);\n    ev.send();\n  }\n\n  /**\n   * creates and returns a new Event containing all fields/dyn_fields from this builder, that can be further fleshed out and sent on its own.\n   * @returns {Event} an Event instance\n   * @example <caption>adding data at send-time</caption>\n   *   let ev = builder.newEvent();\n   *   ev.addField(\"additionalField\", value);\n   *   ev.send();\n   */\n  newEvent () {\n    return new Event(this._libhoney, this._fields, this._dyn_fields);\n  }\n\n  /**\n   * creates and returns a clone of this builder, merged with fields and dyn_fields passed as arguments.\n   * @param {Object|Map<string, any>} fields a field->value mapping to merge into the new builder.\n   * @param {Object|Map<string, any>} dyn_fields a field->dynamic function mapping to merge into the new builder.\n   * @returns {Builder} a Builder instance\n   * @example <caption>no additional fields/dyn_field</caption>\n   *   let anotherBuilder = builder.newBuilder();\n   * @example <caption>additional fields/dyn_field</caption>\n   *   let anotherBuilder = builder.newBuilder({ requestId },\n   *                                           {\n   *                                             process_heapUsed: () => process.memoryUsage().heapUsed\n   *                                           });\n   */\n  newBuilder (fields, dyn_fields) {\n    var b = new Builder(this._libhoney, this._fields, this._dyn_fields);\n    \n    foreach(fields, (v,k) => b.addField(k, v));\n    foreach(dyn_fields, (v,k) => b.addDynamicField(k, v));\n\n    return b;\n  }\n};\n"
+  },
+  {
+    "__docId__": 1,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Builder",
+    "memberof": "src/builder.js",
+    "longname": "src/builder.js~Builder",
+    "access": null,
+    "export": true,
+    "importPath": "libhoney/src/builder.js",
+    "importStyle": "Builder",
+    "description": "Allows piecemeal creation of events.",
+    "lineNumber": 15,
+    "unknown": [
+      {
+        "tagName": "@class",
+        "tagValue": ""
+      }
+    ],
+    "interface": false
+  },
+  {
+    "__docId__": 2,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#constructor",
+    "access": "private",
+    "description": "",
+    "lineNumber": 20,
+    "unknown": [
+      {
+        "tagName": "@constructor",
+        "tagValue": ""
+      }
+    ],
+    "params": [
+      {
+        "name": "libhoney",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "fields",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "dyn_fields",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 3,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_libhoney",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#_libhoney",
+    "access": null,
+    "description": null,
+    "lineNumber": 21,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 4,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_fields",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#_fields",
+    "access": null,
+    "description": null,
+    "lineNumber": 22,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 5,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_dyn_fields",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#_dyn_fields",
+    "access": null,
+    "description": null,
+    "lineNumber": 23,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 6,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "add",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#add",
+    "access": null,
+    "description": "adds a group of field->values to the events created from this builder.",
+    "examples": [
+      "<caption>using an object</caption>\n  var honey = new libhoney();\n  var builder = honey.newBuilder();\n  builder.add ({\n    responseTime_ms: 100,\n    httpStatusCode: 200\n  });",
+      "<caption>using an ES2015 map</caption>\n  let map = new Map();\n  map.set(\"responseTime_ms\", 100);\n  map.set(\"httpStatusCode\", 200);\n  builder.add (map);"
+    ],
+    "lineNumber": 46,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Builder} this Builder instance."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "data",
+        "description": "field->value mapping."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Builder"
+      ],
+      "spread": false,
+      "description": "this Builder instance."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 7,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "addField",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#addField",
+    "access": null,
+    "description": "adds a single field->value mapping to the events created from this builder.",
+    "examples": [
+      "  builder.addField(\"responseTime_ms\", 100);"
+    ],
+    "lineNumber": 59,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Builder} this Builder instance."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "name",
+        "description": ""
+      },
+      {
+        "nullable": null,
+        "types": [
+          "any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "val",
+        "description": ""
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Builder"
+      ],
+      "spread": false,
+      "description": "this Builder instance."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 8,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "addDynamicField",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#addDynamicField",
+    "access": null,
+    "description": "adds a single field->dynamic value function, which is invoked to supply values when events are created from this builder.",
+    "examples": [
+      "  builder.addDynamicField(\"process_heapUsed\", () => process.memoryUsage().heapUsed);"
+    ],
+    "lineNumber": 82,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Builder} this Builder instance."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "name",
+        "description": "the name of the field to add to events."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function(): any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "fn",
+        "description": "the function called to generate the value for this field."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Builder"
+      ],
+      "spread": false,
+      "description": "this Builder instance."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 9,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "sendNow",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#sendNow",
+    "access": null,
+    "description": "creates and sends an event, including all builder fields/dyn_fields, as well as anything in the optional data parameter.",
+    "examples": [
+      "<caption>empty sendNow</caption>\n  builder.sendNow(); // sends just the data that has been added via add/addField/addDynamicField.",
+      "<caption>adding data at send-time</caption>\n  builder.sendNow({\n    additionalField: value\n  });"
+    ],
+    "lineNumber": 96,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "data",
+        "description": "field->value mapping to add to the event sent."
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 10,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "newEvent",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#newEvent",
+    "access": null,
+    "description": "creates and returns a new Event containing all fields/dyn_fields from this builder, that can be further fleshed out and sent on its own.",
+    "examples": [
+      "<caption>adding data at send-time</caption>\n  let ev = builder.newEvent();\n  ev.addField(\"additionalField\", value);\n  ev.send();"
+    ],
+    "lineNumber": 110,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Event} an Event instance"
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Event"
+      ],
+      "spread": false,
+      "description": "an Event instance"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 11,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "newBuilder",
+    "memberof": "src/builder.js~Builder",
+    "longname": "src/builder.js~Builder#newBuilder",
+    "access": null,
+    "description": "creates and returns a clone of this builder, merged with fields and dyn_fields passed as arguments.",
+    "examples": [
+      "<caption>no additional fields/dyn_field</caption>\n  let anotherBuilder = builder.newBuilder();",
+      "<caption>additional fields/dyn_field</caption>\n  let anotherBuilder = builder.newBuilder({ requestId },\n                                          {\n                                            process_heapUsed: () => process.memoryUsage().heapUsed\n                                          });"
+    ],
+    "lineNumber": 127,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Builder} a Builder instance"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "fields",
+        "description": "a field->value mapping to merge into the new builder."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "dyn_fields",
+        "description": "a field->dynamic function mapping to merge into the new builder."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Builder"
+      ],
+      "spread": false,
+      "description": "a Builder instance"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 12,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/event.js",
+    "memberof": null,
+    "longname": "src/event.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 8,
+    "content": "// Copyright 2016 Hound Technology, Inc. All rights reserved.\n// Use of this source code is governed by the Apache License 2.0\n// license that can be found in the LICENSE file.\n\n/**\n * @module\n */\nimport foreach from './foreach';\n\n/**\n * Represents an individual event to send to Honeycomb.\n * @class\n */\nexport default class Event {\n  /**\n   * @constructor\n   * private\n   */\n  constructor(libhoney,\n              fields,\n              dyn_fields) {\n    this.data = Object.create(null);\n    this.metadata = null;\n\n    foreach(fields, (v, k) => this.addField(k, v));\n    foreach(dyn_fields, (v, k) => this.addField(k, v()));\n\n    // stash this away for .send()\n    this._libhoney = libhoney;\n  }\n\n  /**\n   * adds a group of field->values to this event.\n   * @param {Object|Map} data field->value mapping.\n   * @returns {Event} this event.\n   * @example <caption>using an object</caption>\n   *   builder.newEvent()\n   *     .add ({\n   *       responseTime_ms: 100,\n   *       httpStatusCode: 200\n   *     });\n   * @example <caption>using an ES2015 map</caption>\n   *   let map = new Map();\n   *   map.set(\"responseTime_ms\", 100);\n   *   map.set(\"httpStatusCode\", 200);\n   *   let event = honey.newEvent();\n   *   event.add (map);\n   */\n  add (data) {\n    foreach(data, (v, k) => this.addField(k, v));\n    return this;\n  }\n  \n  /**\n   * adds a single field->value mapping to this event.\n   * @param {string} name\n   * @param {any} val\n   * @returns {Event} this event.\n   * @example\n   *   builder.newEvent()\n   *     .addField(\"responseTime_ms\", 100)\n   *     .send();\n   */\n  addField (name, val) {\n    if (typeof val === \"object\") {\n      // JS reports typeof == object for a lot of things that we don't need additional processing to handle\n      if (val === null || val instanceof Boolean || val instanceof Number || val instanceof Date || val instanceof String) {\n        // these are fine\n      } else {\n        val = JSON.stringify(val);\n      }\n    } else if (val == undefined) {\n      val = null;\n    }\n    this.data[name] = val;\n    return this;\n  }\n\n  /**\n   * attaches data to an event that is not transmitted to honeycomb, but instead is available when checking the send responses.\n   * @param {any} md\n   * @returns {Event} this event.\n   */\n  addMetadata (md) {\n    this.metadata = md;\n    return this;\n  }\n\n  /**\n   * sends this event to honeycomb\n   */\n  send () {\n    this._libhoney.sendEvent(this);\n  }\n};\n"
+  },
+  {
+    "__docId__": 13,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Event",
+    "memberof": "src/event.js",
+    "longname": "src/event.js~Event",
+    "access": null,
+    "export": true,
+    "importPath": "libhoney/src/event.js",
+    "importStyle": "Event",
+    "description": "Represents an individual event to send to Honeycomb.",
+    "lineNumber": 14,
+    "unknown": [
+      {
+        "tagName": "@class",
+        "tagValue": ""
+      }
+    ],
+    "interface": false
+  },
+  {
+    "__docId__": 14,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#constructor",
+    "access": null,
+    "description": "",
+    "lineNumber": 19,
+    "unknown": [
+      {
+        "tagName": "@constructor",
+        "tagValue": "private"
+      }
+    ],
+    "params": [
+      {
+        "name": "libhoney",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "fields",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "dyn_fields",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 15,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "data",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#data",
+    "access": null,
+    "description": null,
+    "lineNumber": 22,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 16,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "metadata",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#metadata",
+    "access": null,
+    "description": null,
+    "lineNumber": 23,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 17,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_libhoney",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#_libhoney",
+    "access": null,
+    "description": null,
+    "lineNumber": 29,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 18,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "add",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#add",
+    "access": null,
+    "description": "adds a group of field->values to this event.",
+    "examples": [
+      "<caption>using an object</caption>\n  builder.newEvent()\n    .add ({\n      responseTime_ms: 100,\n      httpStatusCode: 200\n    });",
+      "<caption>using an ES2015 map</caption>\n  let map = new Map();\n  map.set(\"responseTime_ms\", 100);\n  map.set(\"httpStatusCode\", 200);\n  let event = honey.newEvent();\n  event.add (map);"
+    ],
+    "lineNumber": 49,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Event} this event."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "data",
+        "description": "field->value mapping."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Event"
+      ],
+      "spread": false,
+      "description": "this event."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 19,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "addField",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#addField",
+    "access": null,
+    "description": "adds a single field->value mapping to this event.",
+    "examples": [
+      "  builder.newEvent()\n    .addField(\"responseTime_ms\", 100)\n    .send();"
+    ],
+    "lineNumber": 64,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Event} this event."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "name",
+        "description": ""
+      },
+      {
+        "nullable": null,
+        "types": [
+          "any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "val",
+        "description": ""
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Event"
+      ],
+      "spread": false,
+      "description": "this event."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 20,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "addMetadata",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#addMetadata",
+    "access": null,
+    "description": "attaches data to an event that is not transmitted to honeycomb, but instead is available when checking the send responses.",
+    "lineNumber": 84,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Event} this event."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "md",
+        "description": ""
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Event"
+      ],
+      "spread": false,
+      "description": "this event."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 21,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "metadata",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#metadata",
+    "access": null,
+    "description": null,
+    "lineNumber": 85,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 22,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "send",
+    "memberof": "src/event.js~Event",
+    "longname": "src/event.js~Event#send",
+    "access": null,
+    "description": "sends this event to honeycomb",
+    "lineNumber": 92,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 23,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/foreach.js",
+    "memberof": null,
+    "longname": "src/foreach.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 10,
+    "content": "// Copyright 2016 Hound Technology, Inc. All rights reserved.\n// Use of this source code is governed by the Apache License 2.0\n// license that can be found in the LICENSE file.\n\n/**\n * a simple function that offers the same interface\n * for both Map and object key interation.\n * @private\n */\nexport default function foreach(col, f) {\n  if (!col) {\n    return;\n  }\n  if (col instanceof Map) {\n    col.forEach(f);\n  } else {\n    Object.getOwnPropertyNames(col).forEach((k) => f(col[k], k));\n  }\n};\n"
+  },
+  {
+    "__docId__": 24,
+    "kind": "function",
+    "static": true,
+    "variation": null,
+    "name": "foreach",
+    "memberof": "src/foreach.js",
+    "longname": "src/foreach.js~foreach",
+    "access": "private",
+    "export": true,
+    "importPath": "libhoney/src/foreach.js",
+    "importStyle": "foreach",
+    "description": "a simple function that offers the same interface\nfor both Map and object key interation.",
+    "lineNumber": 10,
+    "params": [
+      {
+        "name": "col",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "f",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 25,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/libhoney.js",
+    "memberof": null,
+    "longname": "src/libhoney.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 8,
+    "content": "// Copyright 2016 Hound Technology, Inc. All rights reserved.\n// Use of this source code is governed by the Apache License 2.0\n// license that can be found in the LICENSE file.\n\n/**\n * @module\n */\nimport Transmission from './transmission';\nimport Builder from './builder';\nimport Event from './event';\nimport foreach from './foreach';\n\nconst defaults = {\n  // host to send data to\n  apiHost: \"https://api.honeycomb.io/\",\n\n  // sample rate of data.  causes us to send 1/sample-rate of events\n  // i.e. `sampleRate: 10` means we only send 1/10th the events.\n  sampleRate: 1,\n\n  // response queue.  just an plain js array that transmission will append to\n  responseQueue: [],\n\n  // transmission constructor, or a string \"worker\"/\"base\" to pick one of our builtin versions.\n  // we fall back to the base impl if worker or a custom implementation throws on init.\n  transmission: \"base\",\n\n  // batch triggers\n  batchSizeTrigger: 100, // we send a batch to the api when we have this many outstanding events\n  batchTimeTrigger: 100 // ... or after this many ms has passed.\n};\n\n/**\n * Represents a honeycomb context.  Each honeycomb context has \n * @class\n */\nexport default class Libhoney {\n  /**\n   * constructs a libhoney context.\n   *\n   * @param {Object} [opts] overrides for the defaults\n   * @constructor\n   * @example\n   * import Libhoney from 'libhoney';\n   * let honey = new Libhoney({\n   *   sampleRate: 10\n   * });\n   */\n  constructor (opts) {\n    this._options = Object.assign({}, defaults, opts);\n    this._transmission = getAndInitTransmission(this._options.transmission, this._options);\n    this._usable = this._transmission != null;\n    this._builder = new Builder(this);\n  }\n\n  /**\n   *  sendEvent takes events of the following form:\n   *\n   * {\n   *   data: a JSON-serializable object, keys become colums in Honeycomb\n   *   timestamp [optional]: time for this event, defaults to now()\n   *   writeKey [optional]: your team's write key.  overrides the libhoney instance's value.\n   *   dataset [optional]: the data set name.  overrides the libhoney instance's value.\n   *   sampleRate [optional]: cause us to send 1 out of sampleRate events.  overrides the libhoney instance's value.\n   * }\n   * @private\n   */\n  sendEvent (event) {\n    if (!this._usable) return;\n\n    var timestamp = event.timestamp || Date.now();\n    if (typeof timestamp === 'string' || typeof timestamp === 'number')\n      timestamp = new Date(timestamp);\n\n    if (typeof event.data !== 'object' || event.data === null) {\n      console.error(\".data must be an object\");\n      return;\n    }\n    var postData;\n    try {\n      postData = JSON.stringify(event.data);\n    }\n    catch (e) {\n      console.error(\"error converting event data to JSON: \" + e);\n      return;\n    }\n\n    var apiHost = event.apiHost || this._options.apiHost;\n    if (typeof apiHost !== 'string') {\n      console.error(\".apiHost must be a string\");\n      return;\n    }\n\n    var writeKey = event.writeKey || this._options.writeKey;\n    if (typeof writeKey !== 'string') {\n      console.error(\".writeKey must be a string\");\n      return;\n    }\n\n    var dataset = event.dataset || this._options.dataset;\n    if (typeof dataset !== 'string') {\n      console.error(\".dataset must be a string\");\n      return;\n    }\n\n    var sampleRate = event.sampleRate || this._options.sampleRate;\n    if (typeof sampleRate !== 'number') {\n      console.error(\".sampleRate must be a number\");\n      return;\n    }\n\n    this._transmission.sendEvent({\n      timestamp: timestamp,\n      apiHost: apiHost,\n      postData: postData,\n      writeKey: writeKey,\n      dataset: dataset,\n      sampleRate: sampleRate\n    });\n  }\n\n  /**\n   * adds a group of field->values to the global Builder.\n   * @param {Object|Map<string, any>} data field->value mapping.\n   * @returns {Libhoney} this libhoney instance.\n   * @example <caption>using an object</caption>\n   *   honey.add ({\n   *     responseTime_ms: 100,\n   *     httpStatusCode: 200\n   *   });\n   * @example <caption>using an ES2015 map</caption>\n   *   let map = new Map();\n   *   map.set(\"responseTime_ms\", 100);\n   *   map.set(\"httpStatusCode\", 200);\n   *   honey.add (map);\n   */\n  add (data) {\n    this._builder.add(data);\n    return this;\n  }\n  \n  /**\n   * adds a single field->value mapping to the global Builder.\n   * @param {string} name name of field to add.\n   * @param {any} val value of field to add.\n   * @returns {Libhoney} this libhoney instance.\n   * @example\n   *   honey.addField(\"responseTime_ms\", 100);\n   */\n  addField (name, val) {\n    this._builder.addField(name, val);\n    return this;\n  }\n\n  /**\n   * adds a single field->dynamic value function to the global Builder.\n   * @param {string} name name of field to add.\n   * @param {function(): any} fn function that will be called to generate the value whenever an event is created.\n   * @returns {Libhoney} this libhoney instance.\n   * @example\n   *   honey.addDynamicField(\"process_heapUsed\", () => process.memoryUsage().heapUsed);\n   */\n  addDynamicField (name, fn) {\n    this._builder.addDynamicField(name, fn);\n    return this;\n  }\n\n  /**\n   * creates and sends an event, including all global builder fields/dyn_fields, as well as anything in the optional data parameter.\n   * @param {Object|Map<string, any>} [data] field->value mapping to add to the event sent.\n   * @example <caption>empty sendNow</caption>\n   *   honey.sendNow(); // sends just the data that has been added via add/addField/addDynamicField.\n   * @example <caption>adding data at send-time</caption>\n   *   honey.sendNow({\n   *     additionalField: value\n   *   });\n   */\n  sendNow (data) {\n    return this._builder.sendNow(data);\n  }\n  \n  /**\n   * creates and returns a new Event containing all fields/dyn_fields from the global Builder, that can be further fleshed out and sent on its own.\n   * @returns {Event} an Event instance\n   * @example <caption>adding data at send-time</caption>\n   *   let ev = honey.newEvent();\n   *   ev.addField(\"additionalField\", value);\n   *   ev.send();\n   */\n  newEvent () {\n    return this._builder.newEvent();\n  }\n\n  /**\n   * creates and returns a clone of the global Builder, merged with fields and dyn_fields passed as arguments.\n   * @param {Object|Map<string, any>} fields a field->value mapping to merge into the new builder.\n   * @param {Object|Map<string, any>} dyn_fields a field->dynamic function mapping to merge into the new builder.\n   * @returns {Builder} a Builder instance\n   * @example <caption>no additional fields/dyn_field</caption>\n   *   let builder = honey.newBuilder();\n   * @example <caption>additional fields/dyn_field</caption>\n   *   let builder = honey.newBuilder({ requestId },\n   *                                  {\n   *                                    process_heapUsed: () => process.memoryUsage().heapUsed\n   *                                  });\n   */\n  newBuilder (fields, dyn_fields) {\n    var b = new Builder(this, this._fields, this._dyn_fields);\n    \n    foreach(fields, (v,k) => b.addField(k, v));\n    foreach(dyn_fields, (v,k) => b.addDynamicField(k, v));\n\n    return b;\n  }\n}\n\nfunction getAndInitTransmission(transmission, options) {\n  if (typeof transmission === \"string\") {\n    if (transmission === \"base\") {\n      transmission = Transmission;\n    } else if (transmission === \"worker\") {\n      console.warn(\"worker implementation not ready yet.  using base implementation\");\n      transmission = Transmission;\n    } else {\n      throw new Error(`unknown transmission implementation \"${transmission}\".`);\n    }\n  } else if (typeof transmission !== \"function\") {\n    throw new Error(\".transmission must be one of 'base'/'worker' or a constructor.\");\n  }\n\n  try {\n    return new transmission(options);\n  }\n  catch (e) {\n    if (transmission == Transmission) {\n      throw new Error(\"unable to initialize base transmission implementation.\", e);\n    }\n\n    console.warn(\"failed to initialize transmission, falling back to base implementation.\");\n    try {\n      transmission = new Transmission(options);\n    }\n    catch (e) {\n      throw new Error(\"unable to initialize base transmission implementation.\", e);\n    }\n  }\n\n  return transmission;\n}\n"
+  },
+  {
+    "__docId__": 26,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "defaults",
+    "memberof": "src/libhoney.js",
+    "longname": "src/libhoney.js~defaults",
+    "access": null,
+    "export": false,
+    "importPath": "libhoney/src/libhoney.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 13,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 27,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Libhoney",
+    "memberof": "src/libhoney.js",
+    "longname": "src/libhoney.js~Libhoney",
+    "access": null,
+    "export": true,
+    "importPath": "libhoney/src/libhoney.js",
+    "importStyle": "Libhoney",
+    "description": "Represents a honeycomb context.  Each honeycomb context has ",
+    "lineNumber": 37,
+    "unknown": [
+      {
+        "tagName": "@class",
+        "tagValue": ""
+      }
+    ],
+    "interface": false
+  },
+  {
+    "__docId__": 28,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#constructor",
+    "access": null,
+    "description": "constructs a libhoney context.",
+    "examples": [
+      "import Libhoney from 'libhoney';\nlet honey = new Libhoney({\n  sampleRate: 10\n});"
+    ],
+    "lineNumber": 49,
+    "unknown": [
+      {
+        "tagName": "@constructor",
+        "tagValue": ""
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "opts",
+        "description": "overrides for the defaults"
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 29,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_options",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#_options",
+    "access": null,
+    "description": null,
+    "lineNumber": 50,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 30,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_transmission",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#_transmission",
+    "access": null,
+    "description": null,
+    "lineNumber": 51,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 31,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_usable",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#_usable",
+    "access": null,
+    "description": null,
+    "lineNumber": 52,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 32,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_builder",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#_builder",
+    "access": null,
+    "description": null,
+    "lineNumber": 53,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 33,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "sendEvent",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#sendEvent",
+    "access": "private",
+    "description": " sendEvent takes events of the following form:\n\n{\n  data: a JSON-serializable object, keys become colums in Honeycomb\n  timestamp [optional]: time for this event, defaults to now()\n  writeKey [optional]: your team's write key.  overrides the libhoney instance's value.\n  dataset [optional]: the data set name.  overrides the libhoney instance's value.\n  sampleRate [optional]: cause us to send 1 out of sampleRate events.  overrides the libhoney instance's value.\n}",
+    "lineNumber": 68,
+    "params": [
+      {
+        "name": "event",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 34,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "add",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#add",
+    "access": null,
+    "description": "adds a group of field->values to the global Builder.",
+    "examples": [
+      "<caption>using an object</caption>\n  honey.add ({\n    responseTime_ms: 100,\n    httpStatusCode: 200\n  });",
+      "<caption>using an ES2015 map</caption>\n  let map = new Map();\n  map.set(\"responseTime_ms\", 100);\n  map.set(\"httpStatusCode\", 200);\n  honey.add (map);"
+    ],
+    "lineNumber": 137,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Libhoney} this libhoney instance."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "data",
+        "description": "field->value mapping."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Libhoney"
+      ],
+      "spread": false,
+      "description": "this libhoney instance."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 35,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "addField",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#addField",
+    "access": null,
+    "description": "adds a single field->value mapping to the global Builder.",
+    "examples": [
+      "  honey.addField(\"responseTime_ms\", 100);"
+    ],
+    "lineNumber": 150,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Libhoney} this libhoney instance."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "name",
+        "description": "name of field to add."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "val",
+        "description": "value of field to add."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Libhoney"
+      ],
+      "spread": false,
+      "description": "this libhoney instance."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 36,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "addDynamicField",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#addDynamicField",
+    "access": null,
+    "description": "adds a single field->dynamic value function to the global Builder.",
+    "examples": [
+      "  honey.addDynamicField(\"process_heapUsed\", () => process.memoryUsage().heapUsed);"
+    ],
+    "lineNumber": 163,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Libhoney} this libhoney instance."
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "string"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "name",
+        "description": "name of field to add."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "function(): any"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "fn",
+        "description": "function that will be called to generate the value whenever an event is created."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Libhoney"
+      ],
+      "spread": false,
+      "description": "this libhoney instance."
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 37,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "sendNow",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#sendNow",
+    "access": null,
+    "description": "creates and sends an event, including all global builder fields/dyn_fields, as well as anything in the optional data parameter.",
+    "examples": [
+      "<caption>empty sendNow</caption>\n  honey.sendNow(); // sends just the data that has been added via add/addField/addDynamicField.",
+      "<caption>adding data at send-time</caption>\n  honey.sendNow({\n    additionalField: value\n  });"
+    ],
+    "lineNumber": 178,
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": true,
+        "name": "data",
+        "description": "field->value mapping to add to the event sent."
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 38,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "newEvent",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#newEvent",
+    "access": null,
+    "description": "creates and returns a new Event containing all fields/dyn_fields from the global Builder, that can be further fleshed out and sent on its own.",
+    "examples": [
+      "<caption>adding data at send-time</caption>\n  let ev = honey.newEvent();\n  ev.addField(\"additionalField\", value);\n  ev.send();"
+    ],
+    "lineNumber": 190,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Event} an Event instance"
+      }
+    ],
+    "params": [],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Event"
+      ],
+      "spread": false,
+      "description": "an Event instance"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 39,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "newBuilder",
+    "memberof": "src/libhoney.js~Libhoney",
+    "longname": "src/libhoney.js~Libhoney#newBuilder",
+    "access": null,
+    "description": "creates and returns a clone of the global Builder, merged with fields and dyn_fields passed as arguments.",
+    "examples": [
+      "<caption>no additional fields/dyn_field</caption>\n  let builder = honey.newBuilder();",
+      "<caption>additional fields/dyn_field</caption>\n  let builder = honey.newBuilder({ requestId },\n                                 {\n                                   process_heapUsed: () => process.memoryUsage().heapUsed\n                                 });"
+    ],
+    "lineNumber": 207,
+    "unknown": [
+      {
+        "tagName": "@returns",
+        "tagValue": "{Builder} a Builder instance"
+      }
+    ],
+    "params": [
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "fields",
+        "description": "a field->value mapping to merge into the new builder."
+      },
+      {
+        "nullable": null,
+        "types": [
+          "Object",
+          "Map<string, any>"
+        ],
+        "spread": false,
+        "optional": false,
+        "name": "dyn_fields",
+        "description": "a field->dynamic function mapping to merge into the new builder."
+      }
+    ],
+    "return": {
+      "nullable": null,
+      "types": [
+        "Builder"
+      ],
+      "spread": false,
+      "description": "a Builder instance"
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 40,
+    "kind": "function",
+    "static": true,
+    "variation": null,
+    "name": "getAndInitTransmission",
+    "memberof": "src/libhoney.js",
+    "longname": "src/libhoney.js~getAndInitTransmission",
+    "access": null,
+    "export": false,
+    "importPath": "libhoney/src/libhoney.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 217,
+    "undocument": true,
+    "params": [
+      {
+        "name": "transmission",
+        "types": [
+          "*"
+        ]
+      },
+      {
+        "name": "options",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 41,
+    "kind": "file",
+    "static": true,
+    "variation": null,
+    "name": "src/transmission.js",
+    "memberof": null,
+    "longname": "src/transmission.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 8,
+    "content": "// Copyright 2016 Hound Technology, Inc. All rights reserved.\n// Use of this source code is governed by the Apache License 2.0\n// license that can be found in the LICENSE file.\n\n/**\n * @module\n */\nimport * as superagent from 'superagent';\n\nconst libhoney_js_version = \"LIBHONEY_JS_VERSION\";\n\n// default triggers for sending a batch:\nconst batchSizeTrigger = 100; // either when the eventQueue is > this length\nconst batchTimeTrigger = 100; // or it's been more than this many ms since the first push\n\nconst emptyResponseCallback = function() { };\n\n/**\n * @private\n */\nexport default class Transmission {\n\n  constructor (options) {\n    this._responseCallback = emptyResponseCallback;\n    this._batchSizeTrigger = batchSizeTrigger;\n    this._batchTimeTrigger = batchTimeTrigger;\n    this._sendTimeoutId = -1;\n    this._eventQueue = [];\n\n    if (typeof options.responseCallback == \"function\") {\n      this._responseCallback = options.responseCallback;\n    }\n    if (typeof options.batchSizeTrigger == \"number\") {\n      this._batchSizeTrigger = options.batchSizeTrigger;\n    }\n    if (typeof options.batchTimeTrigger == \"number\") {\n      this._batchTimeTrigger = options.batchTimeTrigger;\n    }\n  }\n\n  sendEvent (ev) {\n    // bail early if we aren't sampling this event\n    if (!this._shouldSendEvent(ev)) {\n      return;\n    }\n\n    this._eventQueue.push(ev);\n    if (this._eventQueue.length > this._batchSizeTrigger) {\n      this._sendBatch();\n    } else {\n      this._ensureSendTimeout();\n    }\n  }\n\n  _sendBatch () {\n    this._clearSendTimeout();\n\n    var batch = this._eventQueue.splice(0, this._batchSizeTrigger);\n\n    for (var ev of batch) {\n      var url = ev.apiHost + \"/1/events/\" + ev.dataset;\n      var req = superagent.post(url);\n      req\n        .set('X-Hny-Team', ev.writeKey)\n        .set('X-Hny-Samplerate', ev.sampleRate)\n        .set('X-Hny-Event-Time', ev.timestamp.toISOString())\n        .set('User-Agent', `libhoney-js/${libhoney_js_version}`)\n        .type(\"json\")\n        .send(ev.postData)\n        .end((err, res) => {\n          // call a callback here (in our init options) so it can be used both in the node, browser, and worker contexts.\n          this._responseCallback({ stuff: \"goes here\" }); // XXX(toshok)\n        });\n    }\n  }\n\n  _shouldSendEvent (ev) {\n    var { sampleRate } = ev;\n    if (sampleRate <= 1) {\n      return true;\n    }\n    return (Math.random() >= 1/sampleRate);\n  }\n\n  _ensureSendTimeout () {\n    if (this._sendTimeoutId === -1) {\n      this._sendTimeoutId = setTimeout(() => this._sendBatch(), this._batchTimeTrigger);\n    }\n  }\n\n  _clearSendTimeout () {\n    if (this._sendTimeoutId !== -1) {\n      clearTimeout(this._sendTimeoutId);\n      this._sendTimeoutId = -1;\n    }\n  }\n}\n"
+  },
+  {
+    "__docId__": 42,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "libhoney_js_version",
+    "memberof": "src/transmission.js",
+    "longname": "src/transmission.js~libhoney_js_version",
+    "access": null,
+    "export": false,
+    "importPath": "libhoney/src/transmission.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 10,
+    "undocument": true,
+    "type": {
+      "types": [
+        "string"
+      ]
+    }
+  },
+  {
+    "__docId__": 43,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "batchSizeTrigger",
+    "memberof": "src/transmission.js",
+    "longname": "src/transmission.js~batchSizeTrigger",
+    "access": null,
+    "export": false,
+    "importPath": "libhoney/src/transmission.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 13,
+    "undocument": true,
+    "type": {
+      "types": [
+        "number"
+      ]
+    }
+  },
+  {
+    "__docId__": 44,
+    "kind": "variable",
+    "static": true,
+    "variation": null,
+    "name": "batchTimeTrigger",
+    "memberof": "src/transmission.js",
+    "longname": "src/transmission.js~batchTimeTrigger",
+    "access": null,
+    "export": false,
+    "importPath": "libhoney/src/transmission.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 14,
+    "undocument": true,
+    "type": {
+      "types": [
+        "number"
+      ]
+    }
+  },
+  {
+    "__docId__": 45,
+    "kind": "function",
+    "static": true,
+    "variation": null,
+    "name": "emptyResponseCallback",
+    "memberof": "src/transmission.js",
+    "longname": "src/transmission.js~emptyResponseCallback",
+    "access": null,
+    "export": false,
+    "importPath": "libhoney/src/transmission.js",
+    "importStyle": null,
+    "description": null,
+    "lineNumber": 16,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 46,
+    "kind": "class",
+    "static": true,
+    "variation": null,
+    "name": "Transmission",
+    "memberof": "src/transmission.js",
+    "longname": "src/transmission.js~Transmission",
+    "access": "private",
+    "export": true,
+    "importPath": "libhoney/src/transmission.js",
+    "importStyle": "Transmission",
+    "description": "",
+    "lineNumber": 21,
+    "interface": false
+  },
+  {
+    "__docId__": 47,
+    "kind": "constructor",
+    "static": false,
+    "variation": null,
+    "name": "constructor",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#constructor",
+    "access": null,
+    "description": null,
+    "lineNumber": 23,
+    "undocument": true,
+    "params": [
+      {
+        "name": "options",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 48,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_responseCallback",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_responseCallback",
+    "access": null,
+    "description": null,
+    "lineNumber": 24,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 49,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_batchSizeTrigger",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_batchSizeTrigger",
+    "access": null,
+    "description": null,
+    "lineNumber": 25,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 50,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_batchTimeTrigger",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_batchTimeTrigger",
+    "access": null,
+    "description": null,
+    "lineNumber": 26,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 51,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_sendTimeoutId",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_sendTimeoutId",
+    "access": null,
+    "description": null,
+    "lineNumber": 27,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 52,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_eventQueue",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_eventQueue",
+    "access": null,
+    "description": null,
+    "lineNumber": 28,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 53,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_responseCallback",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_responseCallback",
+    "access": null,
+    "description": null,
+    "lineNumber": 31,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 54,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_batchSizeTrigger",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_batchSizeTrigger",
+    "access": null,
+    "description": null,
+    "lineNumber": 34,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 55,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_batchTimeTrigger",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_batchTimeTrigger",
+    "access": null,
+    "description": null,
+    "lineNumber": 37,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 56,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "sendEvent",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#sendEvent",
+    "access": null,
+    "description": null,
+    "lineNumber": 41,
+    "undocument": true,
+    "params": [
+      {
+        "name": "ev",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "generator": false
+  },
+  {
+    "__docId__": 57,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_sendBatch",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_sendBatch",
+    "access": null,
+    "description": null,
+    "lineNumber": 55,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 58,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_shouldSendEvent",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_shouldSendEvent",
+    "access": null,
+    "description": null,
+    "lineNumber": 77,
+    "undocument": true,
+    "params": [
+      {
+        "name": "ev",
+        "types": [
+          "*"
+        ]
+      }
+    ],
+    "return": {
+      "types": [
+        "*"
+      ]
+    },
+    "generator": false
+  },
+  {
+    "__docId__": 59,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_ensureSendTimeout",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_ensureSendTimeout",
+    "access": null,
+    "description": null,
+    "lineNumber": 85,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 60,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_sendTimeoutId",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_sendTimeoutId",
+    "access": null,
+    "description": null,
+    "lineNumber": 87,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 61,
+    "kind": "method",
+    "static": false,
+    "variation": null,
+    "name": "_clearSendTimeout",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_clearSendTimeout",
+    "access": null,
+    "description": null,
+    "lineNumber": 91,
+    "undocument": true,
+    "params": [],
+    "generator": false
+  },
+  {
+    "__docId__": 62,
+    "kind": "member",
+    "static": false,
+    "variation": null,
+    "name": "_sendTimeoutId",
+    "memberof": "src/transmission.js~Transmission",
+    "longname": "src/transmission.js~Transmission#_sendTimeoutId",
+    "access": null,
+    "description": null,
+    "lineNumber": 94,
+    "undocument": true,
+    "type": {
+      "types": [
+        "*"
+      ]
+    }
+  },
+  {
+    "__docId__": 64,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Infinity",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Infinity",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Infinity",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 65,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NaN",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~NaN",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 66,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "undefined",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/undefined",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~undefined",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 67,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "null",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/null",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~null",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 68,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 69,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "object",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~object",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 70,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 71,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "function",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~function",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 72,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 73,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "boolean",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~boolean",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 74,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Symbol",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Symbol",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 75,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Error",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Error",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 76,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "EvalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/EvalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~EvalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 77,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "InternalError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/InternalError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~InternalError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 78,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RangeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RangeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 79,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ReferenceError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ReferenceError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 80,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "SyntaxError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~SyntaxError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 81,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "TypeError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~TypeError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 82,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "URIError",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/URIError",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~URIError",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 83,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 84,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "number",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~number",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 85,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Date",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Date",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 86,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "String",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~String",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 87,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "string",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~string",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 88,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "RegExp",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~RegExp",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 89,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 90,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 91,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 92,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint8ClampedArray",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8ClampedArray",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint8ClampedArray",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 93,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 94,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint16Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint16Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 95,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Int32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Int32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 96,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Uint32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Uint32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 97,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float32Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float32Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 98,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Float64Array",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Float64Array",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 99,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Map",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Map",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 100,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Set",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Set",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 101,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakMap",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakMap",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 102,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "WeakSet",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~WeakSet",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 103,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "ArrayBuffer",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~ArrayBuffer",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 104,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DataView",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~DataView",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 105,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "JSON",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~JSON",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 106,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Promise",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Promise",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 107,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Generator",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Generator",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Generator",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 108,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "GeneratorFunction",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/GeneratorFunction",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~GeneratorFunction",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 109,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Reflect",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Reflect",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 110,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Proxy",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy",
+    "memberof": "BuiltinExternal/ECMAScriptExternal.js",
+    "longname": "BuiltinExternal/ECMAScriptExternal.js~Proxy",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 112,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "CanvasRenderingContext2D",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~CanvasRenderingContext2D",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 113,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "DocumentFragment",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/DocumentFragment",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~DocumentFragment",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 114,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Element",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Element",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Element",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 115,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Event",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Event",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Event",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 116,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "Node",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/Node",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~Node",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 117,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "NodeList",
+    "externalLink": "https://developer.mozilla.org/en-US/docs/Web/API/NodeList",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~NodeList",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 118,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "XMLHttpRequest",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/XMLHttpRequest",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~XMLHttpRequest",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 119,
+    "kind": "external",
+    "static": true,
+    "variation": null,
+    "name": "AudioContext",
+    "externalLink": "https://developer.mozilla.org/en/docs/Web/API/AudioContext",
+    "memberof": "BuiltinExternal/WebAPIExternal.js",
+    "longname": "BuiltinExternal/WebAPIExternal.js~AudioContext",
+    "access": null,
+    "description": "",
+    "builtinExternal": true
+  },
+  {
+    "__docId__": 120,
+    "kind": "testFile",
+    "static": true,
+    "variation": null,
+    "name": "test/builder_test.js",
+    "memberof": null,
+    "longname": "test/builder_test.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import assert from 'assert';\nimport libhoney from '../lib/libhoney';\n\ndescribe('libhoney builder', function() {\n  var hny = new libhoney();\n\n  it(\"takes fields and dynamic fields in ctor\", function() {\n    var b = hny.newBuilder({a : 5}, {b: function() { return 3; }});\n    assert.equal(5, b._fields.a);\n    assert.equal(undefined, b._fields.b);\n    b = hny.newBuilder();\n    assert.equal(0, Object.getOwnPropertyNames(b._fields).length);\n    assert.equal(0, Object.getOwnPropertyNames(b._dyn_fields).length);\n  });\n\n  it(\"accepts dict-like arguments to .add()\", function() {\n    var b;\n    var ev;\n\n    b = hny.newBuilder();\n    b.add({ a: 5 });\n    ev = b.newEvent();\n    assert.equal(5, ev.data.a);\n\n    var map = new Map();\n    map.set(\"a\", 5);\n    b = hny.newBuilder();\n    b.add(map);\n    ev = b.newEvent();\n    assert.equal(5, ev.data.a);\n  });\n});\n"
+  },
+  {
+    "__docId__": 121,
+    "kind": "testDescribe",
+    "static": true,
+    "variation": null,
+    "name": "describe0",
+    "testId": 0,
+    "memberof": "test/builder_test.js",
+    "testDepth": 0,
+    "longname": "test/builder_test.js~describe0",
+    "access": null,
+    "description": "libhoney builder",
+    "lineNumber": 4
+  },
+  {
+    "__docId__": 122,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it1",
+    "testId": 1,
+    "memberof": "test/builder_test.js~describe0",
+    "testDepth": 1,
+    "longname": "test/builder_test.js~describe0.it1",
+    "access": null,
+    "description": "takes fields and dynamic fields in ctor",
+    "lineNumber": 7
+  },
+  {
+    "__docId__": 123,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it2",
+    "testId": 2,
+    "memberof": "test/builder_test.js~describe0",
+    "testDepth": 1,
+    "longname": "test/builder_test.js~describe0.it2",
+    "access": null,
+    "description": "accepts dict-like arguments to .add()",
+    "lineNumber": 16
+  },
+  {
+    "__docId__": 124,
+    "kind": "testFile",
+    "static": true,
+    "variation": null,
+    "name": "test/event_test.js",
+    "memberof": null,
+    "longname": "test/event_test.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import assert from 'assert';\nimport libhoney from '../lib/libhoney';\n\ndescribe('libhoney events', function() {\n  var hny = new libhoney();\n  \n  it(\"inherit fields and dyn_fields from builder\", function() {\n    var b = hny.newBuilder({a : 5}, {b: function() { return 3; }});\n\n    var ev = b.newEvent();\n    assert.equal(5, ev.data.a);\n    assert.equal(3, ev.data.b);\n  });\n\n  it(\"accepts dict-like arguments to .add()\", function() {\n    var b = hny.newBuilder();\n    var ev = b.newEvent();\n\n    ev.add({ a: 5 });\n    assert.equal(5, ev.data.a);\n\n    var ev2 = b.newEvent();\n    var map = new Map();\n    map.set(\"a\", 5);\n    assert.equal(5, ev.data.a);\n  });\n\n  it(\"it toString()'s keys from Maps in .add()\", function() {\n    var b = hny.newBuilder();\n    var ev = b.newEvent();\n\n    var map = new Map();\n    map.set({ toString: function() { return \"hello\"; } }, 5);\n    ev.add(map);\n\n    assert.equal(5, ev.data.hello);\n  });\n\n  it(\"converts all values to primitive types in .add/.addField\", function() {\n    var b = hny.newBuilder();\n    var ev;\n    var map;\n\n    ev = b.newEvent();\n    map = new Map();\n    \n    // Object, we JSON.stringify it\n    map.set(\"obj\", { a: 1, b : 2 });\n\n    // String converts to a string\n    map.set(\"String\", new String(\"a:1\"));\n    map.set(\"string\", \"a:1\");\n\n    // Number converts to a number\n    map.set(\"Number\", new Number(5));\n    map.set(\"number\", 5);\n\n    // Boolean converts to a boolean\n    map.set(\"Boolean\", new Boolean(true));\n    map.set(\"boolean\", true);\n\n    // Date does not convert\n    map.set(\"Date\", new Date(1,2,3,4,5,6,7));\n\n    // Null/undefined both end up being null in the output\n    map.set(\"null\", null);\n    map.set(\"undefined\", undefined);\n    \n    ev.add(map);\n    assert.equal(JSON.stringify(ev.data), '{\"obj\":\\\"{\\\\\"a\\\\\":1,\\\\\"b\\\\\":2}\\\",\"String\":\"a:1\",\"string\":\"a:1\",\"Number\":5,\"number\":5,\"Boolean\":true,\"boolean\":true,\"Date\":\"1901-03-03T12:05:06.007Z\",\"null\":null,\"undefined\":null}');\n  });\n});\n"
+  },
+  {
+    "__docId__": 125,
+    "kind": "testDescribe",
+    "static": true,
+    "variation": null,
+    "name": "describe3",
+    "testId": 3,
+    "memberof": "test/event_test.js",
+    "testDepth": 0,
+    "longname": "test/event_test.js~describe3",
+    "access": null,
+    "description": "libhoney events",
+    "lineNumber": 4
+  },
+  {
+    "__docId__": 126,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it4",
+    "testId": 4,
+    "memberof": "test/event_test.js~describe3",
+    "testDepth": 1,
+    "longname": "test/event_test.js~describe3.it4",
+    "access": null,
+    "description": "inherit fields and dyn_fields from builder",
+    "lineNumber": 7
+  },
+  {
+    "__docId__": 127,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it5",
+    "testId": 5,
+    "memberof": "test/event_test.js~describe3",
+    "testDepth": 1,
+    "longname": "test/event_test.js~describe3.it5",
+    "access": null,
+    "description": "accepts dict-like arguments to .add()",
+    "lineNumber": 15
+  },
+  {
+    "__docId__": 128,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it6",
+    "testId": 6,
+    "memberof": "test/event_test.js~describe3",
+    "testDepth": 1,
+    "longname": "test/event_test.js~describe3.it6",
+    "access": null,
+    "description": "it toString()'s keys from Maps in .add()",
+    "lineNumber": 28
+  },
+  {
+    "__docId__": 129,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it7",
+    "testId": 7,
+    "memberof": "test/event_test.js~describe3",
+    "testDepth": 1,
+    "longname": "test/event_test.js~describe3.it7",
+    "access": null,
+    "description": "converts all values to primitive types in .add/.addField",
+    "lineNumber": 39
+  },
+  {
+    "__docId__": 130,
+    "kind": "testFile",
+    "static": true,
+    "variation": null,
+    "name": "test/libhoney_test.js",
+    "memberof": null,
+    "longname": "test/libhoney_test.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import assert from 'assert';\nimport libhoney from '../lib/libhoney';\n\nvar _transmissionConstructorArg = null;\nvar _transmissionSendEventArg = null;\n\nclass MockTransmission {\n  constructor(options) {\n    _transmissionConstructorArg = options;\n  }\n\n  sendEvent (ev) {\n    _transmissionSendEventArg = ev;\n  }\n}\n\ndescribe('libhoney', function() {\n  describe(\"constructor options\", function() {\n    it(\"should be communicated to transmission constructor\", function() {\n      var options = { a: 1, b: 2, c: 3, d: 4, transmission: MockTransmission };\n      var honey = new libhoney(options);\n\n      assert.equal(options.a, _transmissionConstructorArg.a);\n      assert.equal(options.b, _transmissionConstructorArg.b);\n      assert.equal(options.c, _transmissionConstructorArg.c);\n      assert.equal(options.d, _transmissionConstructorArg.d);\n    });\n  });\n\n  describe(\"event properties\", function() {\n    it(\"should ultimately fallback to hardcoded defaults\", function() {\n      var honey = new libhoney({\n        // these two properties are required\n        writeKey: \"12345\",\n        dataset: \"testing\",\n        transmission: MockTransmission\n      });\n      var postData = { a : 1, b : 2};\n      honey.sendEvent({\n        data: postData\n      });\n\n      assert.equal(_transmissionSendEventArg.apiHost, \"https://api.honeycomb.io/\");\n      assert.equal(_transmissionSendEventArg.writeKey, \"12345\");\n      assert.equal(_transmissionSendEventArg.dataset, \"testing\");\n      assert.equal(_transmissionSendEventArg.sampleRate, 1);\n      assert(_transmissionSendEventArg.timestamp instanceof Date);\n      assert.equal(_transmissionSendEventArg.postData, JSON.stringify(postData));\n    });\n\n    it(\"should come from libhoney options if not specified in event\", function() {\n      var honey = new libhoney({\n        apiHost: \"http://foo/bar\",\n        writeKey: \"12345\",\n        dataset: \"testing\",\n        transmission: MockTransmission\n      });\n      var postData = { a : 1, b : 2};\n      honey.sendEvent({\n        data: postData\n      });\n\n      assert.equal(_transmissionSendEventArg.apiHost, \"http://foo/bar\");\n      assert.equal(_transmissionSendEventArg.writeKey, \"12345\");\n      assert.equal(_transmissionSendEventArg.dataset, \"testing\");\n      assert.equal(_transmissionSendEventArg.postData, JSON.stringify(postData));\n    });\n  });\n});\n"
+  },
+  {
+    "__docId__": 131,
+    "kind": "testDescribe",
+    "static": true,
+    "variation": null,
+    "name": "describe8",
+    "testId": 8,
+    "memberof": "test/libhoney_test.js",
+    "testDepth": 0,
+    "longname": "test/libhoney_test.js~describe8",
+    "access": null,
+    "description": "libhoney",
+    "lineNumber": 17
+  },
+  {
+    "__docId__": 132,
+    "kind": "testDescribe",
+    "static": true,
+    "variation": null,
+    "name": "describe9",
+    "testId": 9,
+    "memberof": "test/libhoney_test.js~describe8",
+    "testDepth": 1,
+    "longname": "test/libhoney_test.js~describe8.describe9",
+    "access": null,
+    "description": "constructor options",
+    "lineNumber": 18
+  },
+  {
+    "__docId__": 133,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it10",
+    "testId": 10,
+    "memberof": "test/libhoney_test.js~describe8.describe9",
+    "testDepth": 2,
+    "longname": "test/libhoney_test.js~describe8.describe9.it10",
+    "access": null,
+    "description": "should be communicated to transmission constructor",
+    "lineNumber": 19
+  },
+  {
+    "__docId__": 134,
+    "kind": "testDescribe",
+    "static": true,
+    "variation": null,
+    "name": "describe11",
+    "testId": 11,
+    "memberof": "test/libhoney_test.js~describe8",
+    "testDepth": 1,
+    "longname": "test/libhoney_test.js~describe8.describe11",
+    "access": null,
+    "description": "event properties",
+    "lineNumber": 30
+  },
+  {
+    "__docId__": 135,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it12",
+    "testId": 12,
+    "memberof": "test/libhoney_test.js~describe8.describe11",
+    "testDepth": 2,
+    "longname": "test/libhoney_test.js~describe8.describe11.it12",
+    "access": null,
+    "description": "should ultimately fallback to hardcoded defaults",
+    "lineNumber": 31
+  },
+  {
+    "__docId__": 136,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it13",
+    "testId": 13,
+    "memberof": "test/libhoney_test.js~describe8.describe11",
+    "testDepth": 2,
+    "longname": "test/libhoney_test.js~describe8.describe11.it13",
+    "access": null,
+    "description": "should come from libhoney options if not specified in event",
+    "lineNumber": 51
+  },
+  {
+    "__docId__": 137,
+    "kind": "testFile",
+    "static": true,
+    "variation": null,
+    "name": "test/transmission_test.js",
+    "memberof": null,
+    "longname": "test/transmission_test.js",
+    "access": null,
+    "description": null,
+    "lineNumber": 1,
+    "content": "import assert from 'assert';\nimport Transmission from '../lib/transmission';\n\ndescribe('transmission', function() {\n\n  it('should eventually send a single event (after the timeout)', function(done) {\n    var transmission = new Transmission({\n      batchTimeTrigger: 10,\n      responseCallback: function(resp) {\n        done();\n      }\n    });\n\n    transmission.sendEvent({\n      postUrl: \"http://localhost:9999\",\n      writeKey: \"123456789\",\n      dataSet: \"test-transmission\",\n      sampleRate: 1,\n      timestamp: new Date(),\n      postData: JSON.stringify({ a: 1, b: 2 })\n    });\n  });\n\n});\n"
+  },
+  {
+    "__docId__": 138,
+    "kind": "testDescribe",
+    "static": true,
+    "variation": null,
+    "name": "describe14",
+    "testId": 14,
+    "memberof": "test/transmission_test.js",
+    "testDepth": 0,
+    "longname": "test/transmission_test.js~describe14",
+    "access": null,
+    "description": "transmission",
+    "lineNumber": 4
+  },
+  {
+    "__docId__": 139,
+    "kind": "testIt",
+    "static": true,
+    "variation": null,
+    "name": "it15",
+    "testId": 15,
+    "memberof": "test/transmission_test.js~describe14",
+    "testDepth": 1,
+    "longname": "test/transmission_test.js~describe14.it15",
+    "access": null,
+    "description": "should eventually send a single event (after the timeout)",
+    "lineNumber": 6
+  }
+]
